@@ -9,10 +9,12 @@ DevSafe is a command-line tool that helps developers manage multiple git profile
 - 🔄 **Easy Profile Switching** - Switch between profiles with a single command
 - 👥 **Multiple Profile Support** - Work, personal, client - manage them all
 - 🔐 **SSH & GPG Key Support** - Full support for SSH keys and GPG signing
-- 🛡️ **Safety First** - Automatic backups and validation
+- 🛡️ **Safety First** - Pre-commit hooks prevent wrong profile commits
 - 📊 **Clear Status Display** - Always know which profile is active
-- 🎯 **Repository-Specific Settings** - Auto-switch based on repository patterns
+- 🎯 **Repository Integration** - Git-aware status and repository management
 - 🚀 **Fast & Lightweight** - Written in Python for speed and reliability
+- ✅ **Git Hooks** - Automatic validation before commits
+- 🔧 **Easy Setup** - Simple `devsafe init` to protect any repository
 
 ## 🚀 Quick Start
 
@@ -40,6 +42,9 @@ devsafe switch personal
 
 # Check current profile
 devsafe current
+
+# Initialize DevSafe in a git repository (adds safety hooks)
+devsafe init
 
 # See status
 devsafe status
@@ -85,6 +90,18 @@ devsafe switch work
 devsafe current
 ```
 
+### Repository Safety
+
+```bash
+# Initialize DevSafe in a git repository
+devsafe init
+
+# DevSafe will now validate profiles before commits
+git commit -m "Your commit message"
+# ✅ Allowed if profile matches git config
+# ❌ Blocked if profile doesn't match with helpful error message
+```
+
 ### Status and Information
 
 ```bash
@@ -124,12 +141,18 @@ DevSafe stores its configuration in `~/.devsafe/config.json`. The configuration 
 
 ## 🔧 Advanced Features
 
-### Git Hooks (Coming Soon)
-DevSafe can install git hooks to prevent commits with the wrong profile:
+### Git Hooks ✅
+DevSafe includes git hooks to prevent commits with the wrong profile:
 
 ```bash
 devsafe init  # Initialize DevSafe in current repository
 ```
+
+Once initialized, DevSafe will:
+- 🛡️ Validate your profile before every commit
+- ❌ Block commits if profile doesn't match git config
+- 📋 Show clear guidance to fix profile mismatches
+- ✅ Allow commits when profile is correctly set
 
 ### Repository-Specific Profiles (Coming Soon)
 Set default profiles for specific repositories or patterns:
@@ -180,13 +203,29 @@ DevSafe modifies your global git configuration. While it creates backups automat
 
 ## 🎯 Roadmap
 
-- [ ] Git hooks integration
-- [ ] Repository-specific auto-switching  
-- [ ] Profile templates
-- [ ] SSH key management improvements
-- [ ] Shell completion support
-- [ ] GUI application
-- [ ] IDE extensions
+### ✅ Completed Features
+- [x] **Git hooks integration** - Pre-commit validation and safety features
+- [x] **Profile management** - Add, list, switch, remove profiles with full CLI
+- [x] **Git configuration management** - Automatic git config updates
+- [x] **Safety validation** - Profile mismatch detection and prevention
+- [x] **Repository awareness** - Status shows current repo information
+- [x] **Cross-platform support** - Works on macOS, Linux, and Windows
+- [x] **Comprehensive testing** - Full test suite with pytest
+- [x] **Modern Python packaging** - Uses pyproject.toml and modern standards
+
+### 🚧 In Progress
+- [ ] **Repository-specific auto-switching** - Auto-detect and switch profiles by repo patterns
+- [ ] **Enhanced documentation** - More examples and use cases
+
+### 🎯 Future Features
+- [ ] **Profile templates** - Pre-configured profile templates for common setups
+- [ ] **SSH key management improvements** - Better SSH key handling and validation
+- [ ] **Shell completion support** - Tab completion for bash/zsh/fish
+- [ ] **Configuration GUI** - Desktop application for profile management
+- [ ] **IDE extensions** - VS Code, IntelliJ, and other IDE integrations
+- [ ] **Team sharing** - Share profile configurations across teams
+- [ ] **Multi-repository management** - Bulk operations across multiple repos
+- [ ] **Profile analytics** - Track profile usage and switch frequency
 
 ---
 
