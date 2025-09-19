@@ -220,6 +220,13 @@ def remove(
 
 
 @app.command()
+def init() -> None:
+    """Initialize DevSafe in the current git repository."""
+    from devsafe.commands.init import init_devsafe_in_repo
+    init_devsafe_in_repo()
+
+
+@app.command()
 def status() -> None:
     """Show DevSafe status and configuration."""
     # Validate git installation
