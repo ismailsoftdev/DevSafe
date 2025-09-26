@@ -142,6 +142,7 @@ DevSafe stores its configuration in `~/.devsafe/config.json`. The configuration 
 ## 🔧 Advanced Features
 
 ### Git Hooks ✅
+
 DevSafe includes git hooks to prevent commits with the wrong profile:
 
 ```bash
@@ -149,12 +150,14 @@ devsafe init  # Initialize DevSafe in current repository
 ```
 
 Once initialized, DevSafe will:
+
 - 🛡️ Validate your profile before every commit
 - ❌ Block commits if profile doesn't match git config
 - 📋 Show clear guidance to fix profile mismatches
 - ✅ Allow commits when profile is correctly set
 
 ### Repository-Specific Profiles (Coming Soon)
+
 Set default profiles for specific repositories or patterns:
 
 ```bash
@@ -204,6 +207,7 @@ DevSafe modifies your global git configuration. While it creates backups automat
 ## 🎯 Roadmap
 
 ### ✅ Completed Features
+
 - [x] **Git hooks integration** - Pre-commit validation and safety features
 - [x] **Profile management** - Add, list, switch, remove profiles with full CLI
 - [x] **Git configuration management** - Automatic git config updates
@@ -214,10 +218,12 @@ DevSafe modifies your global git configuration. While it creates backups automat
 - [x] **Modern Python packaging** - Uses pyproject.toml and modern standards
 
 ### 🚧 In Progress
+
 - [ ] **Repository-specific auto-switching** - Auto-detect and switch profiles by repo patterns
 - [ ] **Enhanced documentation** - More examples and use cases
 
 ### 🎯 Future Features
+
 - [ ] **Profile templates** - Pre-configured profile templates for common setups
 - [ ] **SSH key management improvements** - Better SSH key handling and validation
 - [ ] **Shell completion support** - Tab completion for bash/zsh/fish
