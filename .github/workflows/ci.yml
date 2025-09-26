@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [3.8, 3.9, 3.10, 3.11, 3.12, 3.13]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m pip install -r requirements.txt || true
+          python -m pip install -e .
+
+      - name: Run linters (black/isort/mypy/flake8)
+        run: |
+          python -m pip install black isort mypy flake8
+          black --check . || true
+          isort --check --diff . || true
+          mypy devsafe || true
+          flake8 || true
+
+      - name: Run tests
+        run: |
+          python -m pip install pytest pytest-cov
+          pytest -q
+
+      - name: Build artifacts
+        if: always()
+        run: |
+          python -m build
+
+  publish-pypi:
+    needs: test-build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: Install build & twine
+        run: python -m pip install --upgrade build twine
+      - name: Build
+        run: python -m build
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          python -m twine upload dist/*
+
+# Notes:
+# 1. Create a PyPI API token and add it to this repo's secrets as PYPI_API_TOKEN.
+# 2. The workflow publishes only on annotated tag pushes that match vX.Y.Z.
+# 3. Consider tightening linter failure behavior (remove the `|| true` parts) once the codebase is lint-clean.

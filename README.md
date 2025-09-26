@@ -20,6 +20,22 @@ DevSafe is a command-line tool that helps developers manage multiple git profile
 
 ### Installation
 
+Recommended (isolated CLI install via pipx):
+
+```bash
+# Install pipx if you don't have it
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+
+# Install DevSafe via pipx (recommended)
+pipx install devsafe
+
+# Upgrade
+pipx upgrade devsafe
+```
+
+Alternative (pip):
+
 ```bash
 pip install devsafe
 ```
