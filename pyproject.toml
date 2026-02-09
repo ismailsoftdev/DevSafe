@@ -27,12 +27,12 @@ classifiers = [
     "Topic :: Software Development :: Version Control :: Git",
     "Topic :: System :: Systems Administration",
 ]
-requires-python = ">=3.8,<4"
+requires-python = ">=3.8.1,<4"
 dependencies = [
-    "typer[all]>=0.9.0",
+    "typer>=0.9.0",
     "rich>=13.0.0",
     "GitPython>=3.1.0",
-    "pydantic>=2.0.0",
+    "pydantic[email]>=2.0.0",
     "questionary>=1.10.0",
     "pathlib-mate>=1.0.0",
 ]
@@ -45,6 +45,10 @@ dev = [
     "isort>=5.12.0",
     "flake8>=6.0.0",
     "mypy>=1.0.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
 ]
 
 [project.urls]
@@ -127,4 +131,29 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
+]
+
+# uv configuration
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+# Build configuration for distribution
+[tool.hatch.build.targets.wheel]
+packages = ["devsafe"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/devsafe",
+    "/tests",
+    "/hooks",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
 ]
