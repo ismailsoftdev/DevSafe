@@ -152,7 +152,6 @@ packages = ["devsafe"]
 include = [
     "/devsafe",
     "/tests",
-    "/hooks",
     "/README.md",
     "/LICENSE",
     "/pyproject.toml",

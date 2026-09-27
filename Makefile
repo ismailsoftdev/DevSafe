@@ -53,7 +53,7 @@ docker-run: ## Run DevSafe in Docker
 	docker run --rm -it devsafe:latest
 
 setup-hooks: ## Set up git hooks for development
-	cp hooks/pre-commit .git/hooks/pre-commit
+	cp devsafe/hooks/pre-commit .git/hooks/pre-commit
 	chmod +x .git/hooks/pre-commit
 
 demo: ## Run a quick demo

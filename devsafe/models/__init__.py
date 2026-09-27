@@ -19,15 +19,17 @@ class Profile(BaseModel):
 
     @field_validator("ssh_key", mode="before")
     @classmethod
-    def validate_ssh_key_path(cls, v):
-        """Validate SSH key path exists if provided."""
+    def expand_ssh_key_path(cls, v):
+        """Expand ~ in the SSH key path.
+
+        Existence is checked when a profile is added, not here: this validator
+        also runs when loading config.json, and a key that was later moved or
+        deleted must not make the whole config unloadable.
+        """
         if v is None:
             return v
-        
-        path = Path(v).expanduser()
-        if not path.exists():
-            raise ValueError(f"SSH key file not found: {path}")
-        return path
+
+        return Path(v).expanduser()
 
     model_config = ConfigDict(
         json_encoders={Path: str}

@@ -4,13 +4,14 @@ import sys
 from pathlib import Path
 
 import typer
+from pydantic import ValidationError
 from rich.console import Console
 from rich.table import Table
 
 from devsafe import __description__, __version__
 from devsafe.core import GitConfigManager
 from devsafe.models import DevSafeConfig, Profile
-from devsafe.utils import ConfigManager
+from devsafe.utils import ConfigError, ConfigManager
 
 console = Console()
 app = typer.Typer(
@@ -23,6 +24,16 @@ app = typer.Typer(
 # Initialize managers
 config_manager = ConfigManager()
 git_manager = GitConfigManager()
+
+
+def load_config() -> DevSafeConfig:
+    """Load the config, exiting instead of continuing with an empty one."""
+    try:
+        return config_manager.load_config()
+    except ConfigError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        console.print("Fix or remove the config file, then try again.")
+        raise typer.Exit(1)
 
 
 def version_callback(value: bool) -> None:
@@ -57,7 +68,7 @@ def add(
     description: str = typer.Option(None, "--description", "-d", help="Profile description"),
 ) -> None:
     """Add a new git profile."""
-    config = config_manager.load_config()
+    config = load_config()
     
     # Check if profile already exists
     if profile_name in config.profiles:
@@ -84,6 +95,10 @@ def add(
         description_input = typer.prompt("Profile description (optional)", default="", show_default=False)
         description = description_input if description_input else None
     
+    if ssh_key and not Path(ssh_key).expanduser().exists():
+        console.print(f"[red]SSH key file not found: {Path(ssh_key).expanduser()}[/red]")
+        raise typer.Exit(1)
+
     try:
         # Create profile
         profile = Profile(
@@ -93,30 +108,29 @@ def add(
             signing_key=signing_key,
             description=description,
         )
-        
-        # Add to config
-        config.add_profile(profile_name, profile)
-        
-        # Save config
-        if config_manager.save_config(config):
-            console.print(f"[green]✓[/green] Profile '{profile_name}' added successfully!")
-            
-            # Ask if user wants to switch to this profile
-            if typer.confirm("Switch to this profile now?", default=True):
-                switch_to_profile(profile_name, config)
-        else:
-            console.print("[red]Failed to save configuration![/red]")
-            raise typer.Exit(1)
-            
-    except Exception as e:
+    except ValidationError as e:
         console.print(f"[red]Error creating profile: {e}[/red]")
         raise typer.Exit(1)
+
+    # Add to config
+    config.add_profile(profile_name, profile)
+
+    # Save config
+    if not config_manager.save_config(config):
+        console.print("[red]Failed to save configuration![/red]")
+        raise typer.Exit(1)
+
+    console.print(f"[green]✓[/green] Profile '{profile_name}' added successfully!")
+
+    # Ask if user wants to switch to this profile
+    if typer.confirm("Switch to this profile now?", default=True):
+        switch_to_profile(profile_name, config)
 
 
 @app.command()
 def list() -> None:
     """List all profiles."""
-    config = config_manager.load_config()
+    config = load_config()
     
     if not config.profiles:
         console.print("[yellow]No profiles found. Use 'devsafe add' to create one.[/yellow]")
@@ -155,14 +169,14 @@ def switch(
     profile_name: str = typer.Argument(..., help="Name of the profile to switch to"),
 ) -> None:
     """Switch to a different profile."""
-    config = config_manager.load_config()
+    config = load_config()
     switch_to_profile(profile_name, config)
 
 
 @app.command()
 def current() -> None:
     """Show current profile information."""
-    config = config_manager.load_config()
+    config = load_config()
     
     if not config.current_profile:
         console.print("[yellow]No profile is currently active.[/yellow]")
@@ -195,7 +209,7 @@ def remove(
     force: bool = typer.Option(False, "--force", "-f", help="Force removal without confirmation"),
 ) -> None:
     """Remove a profile."""
-    config = config_manager.load_config()
+    config = load_config()
     
     if profile_name not in config.profiles:
         console.print(f"[red]Profile '{profile_name}' not found![/red]")
@@ -220,10 +234,15 @@ def remove(
 
 
 @app.command()
-def init() -> None:
+def init(
+    force: bool = typer.Option(
+        False, "--force", "-f",
+        help="Replace an existing pre-commit hook (it is backed up first)"
+    ),
+) -> None:
     """Initialize DevSafe in the current git repository."""
     from devsafe.commands.init import init_devsafe_in_repo
-    init_devsafe_in_repo()
+    init_devsafe_in_repo(force=force)
 
 
 @app.command()
@@ -242,7 +261,7 @@ def status() -> None:
     console.print(f"Config file: {'✓' if config_info['config_exists'] else '✗'} {config_info['config_file']}")
     
     # Load config
-    config = config_manager.load_config()
+    config = load_config()
     console.print(f"Profiles: {len(config.profiles)}")
     console.print(f"Current profile: {config.current_profile or 'None'}")
     console.print(f"Auto-switch: {'✓' if config.auto_switch else '✗'}")

@@ -8,6 +8,10 @@ from rich.console import Console
 
 console = Console()
 
+# Optional keys a profile may set. When switching to a profile that doesn't
+# set one, it is unset so the previous profile's value doesn't carry over.
+OPTIONAL_PROFILE_KEYS = ("user.signingkey", "commit.gpgsign")
+
 
 class GitConfigManager:
     """Manages git configuration operations."""
@@ -122,11 +126,15 @@ class GitConfigManager:
     def apply_profile_config(self, profile_config: Dict[str, str]) -> bool:
         """Apply a profile's configuration to git."""
         success = True
-        
+
         for key, value in profile_config.items():
             if not self.set_git_config(key, value):
                 success = False
-        
+
+        for key in OPTIONAL_PROFILE_KEYS:
+            if key not in profile_config and not self.unset_git_config(key):
+                success = False
+
         return success
 
     def is_git_repository(self, path: Optional[Path] = None) -> bool:
@@ -142,6 +150,36 @@ class GitConfigManager:
             return result.returncode == 0
         except Exception:
             return False
+
+    def get_repository_root(self) -> Optional[Path]:
+        """Get the top-level directory of the current git repository."""
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                capture_output=True, text=True, check=False
+            )
+            if result.returncode == 0:
+                return Path(result.stdout.strip())
+        except Exception:
+            pass
+        return None
+
+    def get_hooks_dir(self) -> Optional[Path]:
+        """Get the hooks directory of the current git repository.
+
+        Works from subdirectories and worktrees, and honors core.hooksPath.
+        """
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--git-path", "hooks"],
+                capture_output=True, text=True, check=False
+            )
+            if result.returncode == 0:
+                # Output is relative to the cwd unless it is already absolute
+                return Path.cwd() / result.stdout.strip()
+        except Exception:
+            pass
+        return None
 
     def get_repository_info(self) -> Optional[Dict[str, str]]:
         """Get information about the current git repository."""

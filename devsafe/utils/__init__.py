@@ -11,6 +11,10 @@ from devsafe.models import DevSafeConfig, RepoConfig
 console = Console()
 
 
+class ConfigError(Exception):
+    """Raised when an existing config file cannot be read or parsed."""
+
+
 class ConfigManager:
     """Manages DevSafe configuration files."""
 
@@ -25,9 +29,14 @@ class ConfigManager:
         self.config_dir.mkdir(exist_ok=True)
 
     def load_config(self) -> DevSafeConfig:
-        """Load DevSafe configuration."""
+        """Load DevSafe configuration.
+
+        Raises ConfigError if the file exists but is unreadable or invalid.
+        Returning an empty config instead would let the next save overwrite
+        every stored profile.
+        """
         self.ensure_config_dir()
-        
+
         if not self.config_file.exists():
             return DevSafeConfig()
 
@@ -35,9 +44,8 @@ class ConfigManager:
             with open(self.config_file, 'r') as f:
                 data = json.load(f)
             return DevSafeConfig(**data)
-        except (json.JSONDecodeError, Exception) as e:
-            console.print(f"[red]Error loading config: {e}[/red]")
-            return DevSafeConfig()
+        except Exception as e:
+            raise ConfigError(f"Could not load {self.config_file}: {e}") from e
 
     def save_config(self, config: DevSafeConfig) -> bool:
         """Save DevSafe configuration."""
