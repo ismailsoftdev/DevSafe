@@ -61,6 +61,26 @@ class GitConfigManager:
 
         return config
 
+    def get_effective_identity(self) -> Dict[str, str]:
+        """Get the user.name/user.email git will actually use here.
+
+        Unlike get_current_config, this includes repository-local overrides.
+        """
+        identity = {}
+
+        for key in ("user.name", "user.email"):
+            try:
+                result = subprocess.run(
+                    ["git", "config", key],
+                    capture_output=True, text=True, check=False
+                )
+                if result.returncode == 0:
+                    identity[key] = result.stdout.strip()
+            except Exception as e:
+                console.print(f"[red]Error reading git config {key}: {e}[/red]")
+
+        return identity
+
     def backup_current_config(self) -> bool:
         """Backup current git configuration."""
         try:

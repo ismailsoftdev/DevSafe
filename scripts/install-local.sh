@@ -12,9 +12,9 @@ if ! command -v uv &> /dev/null; then
     exit 1
 fi
 
-# Install in development mode
-echo "📦 Installing DevSafe in development mode..."
-uv pip install -e .
+# Install as an isolated tool, editable so source changes apply immediately
+echo "📦 Installing DevSafe from this checkout..."
+uv tool install --editable . --force
 
 echo "✅ DevSafe installed successfully!"
 echo ""

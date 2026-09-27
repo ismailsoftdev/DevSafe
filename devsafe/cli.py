@@ -245,6 +245,17 @@ def init(
     init_devsafe_in_repo(force=force)
 
 
+hook_app = typer.Typer(help="Git hook entry points (run by installed hooks).")
+app.add_typer(hook_app, name="hook", hidden=True)
+
+
+@hook_app.command("pre-commit")
+def hook_pre_commit() -> None:
+    """Validate the active profile before a commit."""
+    from devsafe.commands.hook import run_pre_commit
+    raise typer.Exit(run_pre_commit(config_manager, git_manager))
+
+
 @app.command()
 def status() -> None:
     """Show DevSafe status and configuration."""

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "devsafe"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Git profile manager for developers - Never commit with the wrong credentials again"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
@@ -18,44 +18,27 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Version Control :: Git",
     "Topic :: System :: Systems Administration",
 ]
-requires-python = ">=3.8.1,<4"
+requires-python = ">=3.10"
 dependencies = [
     "typer>=0.9.0",
     "rich>=13.0.0",
-    "GitPython>=3.1.0",
     "pydantic[email]>=2.0.0",
-    "questionary>=1.10.0",
-    "pathlib-mate>=1.0.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "flake8>=6.0.0",
-    "mypy>=1.0.0",
-]
-test = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/devsafe/devsafe"
-Repository = "https://github.com/devsafe/devsafe"
-Documentation = "https://devsafe.readthedocs.io"
-"Bug Tracker" = "https://github.com/devsafe/devsafe/issues"
+Homepage = "https://github.com/ismailsoftdev/DevSafe"
+Repository = "https://github.com/ismailsoftdev/DevSafe"
+Documentation = "https://github.com/ismailsoftdev/DevSafe#readme"
+"Bug Tracker" = "https://github.com/ismailsoftdev/DevSafe/issues"
+Changelog = "https://github.com/ismailsoftdev/DevSafe/blob/main/CHANGELOG.md"
 
 [project.scripts]
 devsafe = "devsafe.cli:cli_main"
@@ -65,7 +48,7 @@ path = "devsafe/__init__.py"
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py310']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -88,7 +71,7 @@ line_length = 88
 known_first_party = ["devsafe"]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -133,9 +116,8 @@ exclude_lines = [
     "@(abc\\.)?abstractmethod",
 ]
 
-# uv configuration
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "black>=23.0.0",
