@@ -1,32 +1,31 @@
-.PHONY: help install dev test lint format clean build publish
+.PHONY: help install dev test test-cov lint format format-check clean build setup-hooks demo
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install: ## Install DevSafe in production mode
-	pip install .
+install: ## Install the devsafe command from this checkout (editable)
+	uv tool install --editable . --force
 
-dev: ## Install DevSafe in development mode
-	pip install -e .
-	pip install -r requirements.txt
+dev: ## Create the development environment
+	uv sync
 
 test: ## Run tests
-	pytest tests/ -v
+	uv run pytest tests/ -v
 
 test-cov: ## Run tests with coverage
-	pytest tests/ --cov=devsafe --cov-report=html --cov-report=term
+	uv run pytest tests/ --cov=devsafe --cov-report=html --cov-report=term
 
 lint: ## Run linting checks
-	flake8 devsafe/ tests/
-	mypy devsafe/
+	uv run flake8 devsafe/ tests/
+	uv run mypy devsafe/
 
 format: ## Format code
-	black devsafe/ tests/
-	isort devsafe/ tests/
+	uv run black devsafe/ tests/
+	uv run isort devsafe/ tests/
 
 format-check: ## Check code formatting without making changes
-	black --check devsafe/ tests/
-	isort --check-only devsafe/ tests/
+	uv run black --check devsafe/ tests/
+	uv run isort --check-only devsafe/ tests/
 
 clean: ## Clean build artifacts
 	rm -rf build/
@@ -38,19 +37,7 @@ clean: ## Clean build artifacts
 	find . -type f -name "*.pyc" -delete
 
 build: clean ## Build distribution packages
-	python -m build
-
-publish-test: build ## Publish to Test PyPI
-	python -m twine upload --repository testpypi dist/*
-
-publish: build ## Publish to PyPI
-	python -m twine upload dist/*
-
-docker-build: ## Build Docker image
-	docker build -t devsafe:latest .
-
-docker-run: ## Run DevSafe in Docker
-	docker run --rm -it devsafe:latest
+	uv build
 
 setup-hooks: ## Set up git hooks for development
 	cp devsafe/hooks/pre-commit .git/hooks/pre-commit
@@ -59,6 +46,6 @@ setup-hooks: ## Set up git hooks for development
 demo: ## Run a quick demo
 	@echo "🚀 DevSafe Demo"
 	@echo "================"
-	devsafe status
+	uv run devsafe status
 	@echo ""
 	@echo "For more commands, run: devsafe --help"

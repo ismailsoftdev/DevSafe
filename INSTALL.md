@@ -4,8 +4,8 @@
 
 ### Prerequisites
 
-- Python 3.8.1 or higher
-- `uv` package manager (recommended)
+- Git
+- [`uv`](https://docs.astral.sh/uv/) (recommended), or pipx with Python 3.10+
 
 ### Install uv (if not already installed)
 
@@ -13,39 +13,49 @@
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+uv downloads a suitable Python automatically, so you don't need one installed.
+
 ## 📦 Installation Methods
 
-### Method 1: Development Installation (Recommended for contributors)
+### Method 1: uv (Recommended)
 
 ```bash
-# Clone the repository
+uv tool install devsafe
+
+# Verify installation
+devsafe --version
+
+# Upgrade later
+uv tool upgrade devsafe
+```
+
+### Method 2: pipx
+
+```bash
+pipx install devsafe
+devsafe --version
+```
+
+### Method 3: Try without installing
+
+```bash
+uvx devsafe --help
+```
+
+### Method 4: From source
+
+```bash
 git clone https://github.com/ismailsoftdev/DevSafe.git
 cd DevSafe
 
-# Install in development mode
-uv pip install -e .
-
-# Verify installation
-uv run devsafe --version
+# Install the devsafe command from this checkout
+uv tool install --editable .
 ```
 
-### Method 2: Install from Wheel File
+### Method 5: From a wheel file
 
 ```bash
-# Download the wheel file from releases
-uv pip install devsafe-0.1.0-py3-none-any.whl
-
-# Verify installation
-uv run devsafe --version
-```
-
-### Method 3: Install from Source
-
-```bash
-# Clone and install
-git clone https://github.com/ismailsoftdev/DevSafe.git
-cd DevSafe
-uv pip install .
+uv tool install devsafe-0.1.0-py3-none-any.whl
 ```
 
 ## ✅ Verify Installation
@@ -54,13 +64,13 @@ After installation, verify everything works:
 
 ```bash
 # Check version
-uv run devsafe --version
+devsafe --version
 
 # Check status
-uv run devsafe status
+devsafe status
 
 # Get help
-uv run devsafe --help
+devsafe --help
 ```
 
 ## 🎯 First Steps
@@ -68,27 +78,33 @@ uv run devsafe --help
 1. **Add your first profile**:
 
    ```bash
-   uv run devsafe add work --name "Your Name" --email "your@work.com"
+   devsafe add work --name "Your Name" --email "your@work.com"
    ```
 
 2. **Switch to the profile**:
 
    ```bash
-   uv run devsafe switch work
+   devsafe switch work
    ```
 
 3. **Initialize in a git repository**:
 
    ```bash
    cd your-git-repo
-   uv run devsafe init
+   devsafe init
    ```
 
 ## 🔧 Troubleshooting
 
 ### Command not found
 
-If `devsafe` command is not found, use `uv run devsafe` instead, or ensure your PATH includes the uv bin directory.
+uv and pipx install commands into `~/.local/bin`. If `devsafe` isn't found, add that directory to your PATH:
+
+```bash
+uv tool update-shell   # or: pipx ensurepath
+```
+
+Then open a new terminal.
 
 ### Permission errors
 
@@ -98,8 +114,17 @@ Make sure you have write permissions to your home directory for the config file.
 
 Ensure Git is installed and accessible from your terminal.
 
+## 🛠️ Development Setup
+
+```bash
+git clone https://github.com/ismailsoftdev/DevSafe.git
+cd DevSafe
+uv sync          # creates .venv with DevSafe and dev tools
+uv run pytest    # run tests
+uv run devsafe --help
+```
+
 ## 📚 Next Steps
 
 - Read the main [README.md](README.md) for detailed usage
-- Check [DISTRIBUTION.md](DISTRIBUTION.md) for development setup
-- Open an issue if you encounter problems
+- Open an [issue](https://github.com/ismailsoftdev/DevSafe/issues) if you encounter problems

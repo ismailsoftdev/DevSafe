@@ -20,25 +20,33 @@ DevSafe is a command-line tool that helps developers manage multiple git profile
 
 ### Installation
 
-Recommended (isolated CLI install via pipx):
+Recommended: install with [uv](https://docs.astral.sh/uv/). It keeps DevSafe in its own environment and downloads a suitable Python if you don't have one.
 
 ```bash
-# Install pipx if you don't have it
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
+# Install uv if you don't have it
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install DevSafe via pipx (recommended)
-pipx install devsafe
+# Install DevSafe
+uv tool install devsafe
 
 # Upgrade
+uv tool upgrade devsafe
+```
+
+Or try it without installing:
+
+```bash
+uvx devsafe status
+```
+
+Alternative: [pipx](https://pipx.pypa.io/) works the same way (requires Python 3.10+):
+
+```bash
+pipx install devsafe
 pipx upgrade devsafe
 ```
 
-Alternative (pip):
-
-```bash
-pip install devsafe
-```
+See [INSTALL.md](https://github.com/ismailsoftdev/DevSafe/blob/main/INSTALL.md) for more options and troubleshooting.
 
 ### Basic Usage
 
@@ -183,32 +191,29 @@ devsafe config --pattern "*company.com*" --profile work
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Open an [issue](https://github.com/ismailsoftdev/DevSafe/issues) to discuss a change, or send a pull request.
 
 ### Development Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/devsafe/devsafe.git
-cd devsafe
+git clone https://github.com/ismailsoftdev/DevSafe.git
+cd DevSafe
 
-# Install development dependencies
-pip install -r requirements.txt
-
-# Install in development mode
-pip install -e .
+# Create the development environment (installs DevSafe and dev tools)
+uv sync
 
 # Run tests
-pytest
+uv run pytest
 
 # Format code
-black devsafe/
-isort devsafe/
+uv run black devsafe/ tests/
+uv run isort devsafe/ tests/
 ```
 
 ## 📝 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](https://github.com/ismailsoftdev/DevSafe/blob/main/LICENSE) file for details.
 
 ## 🚨 Security Note
 
@@ -216,9 +221,8 @@ DevSafe modifies your global git configuration. While it creates backups automat
 
 ## 📞 Support
 
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/devsafe/devsafe/issues)
-- 💡 **Feature Requests**: [GitHub Issues](https://github.com/devsafe/devsafe/issues)
-- 📖 **Documentation**: [Read the Docs](https://devsafe.readthedocs.io)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/ismailsoftdev/DevSafe/issues)
+- 💡 **Feature Requests**: [GitHub Issues](https://github.com/ismailsoftdev/DevSafe/issues)
 
 ## 🎯 Roadmap
 

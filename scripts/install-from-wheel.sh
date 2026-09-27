@@ -29,8 +29,8 @@ fi
 
 echo "🚀 Installing DevSafe from wheel: $WHEEL_FILE"
 
-# Install from wheel
-uv pip install "$WHEEL_FILE"
+# Install from wheel as an isolated tool
+uv tool install "$WHEEL_FILE" --force
 
 echo "✅ DevSafe installed successfully!"
 echo ""
