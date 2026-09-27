@@ -288,7 +288,7 @@ def bindings() -> None:
     config = load_config()
 
     if not config.bindings:
-        console.print("[yellow]No bindings. Use 'devsafe bind <profile> [path]' to add one.[/yellow]")
+        console.print("[yellow]No bindings. Use 'devsafe bind <profile> \\[path]' to add one.[/yellow]")
         return
 
     table = Table(show_header=True, header_style="bold blue")

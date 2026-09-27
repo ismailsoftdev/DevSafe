@@ -157,6 +157,13 @@ class TestBind:
         assert git_config(repo, "user.email") == "mine@x"
 
 
+class TestBindingsList:
+    def test_empty_list_hint_shows_full_usage(self, env):
+        result = invoke("bindings")
+
+        assert "devsafe bind <profile> [path]" in result.output
+
+
 class TestUnbind:
     def test_unbind_restores_global_identity(self, env):
         assert invoke("switch", "work").exit_code == 0
