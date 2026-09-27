@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.2.0] - 2026-09-27
 
 - Per-directory and per-repository profiles: `devsafe bind <profile> [path]` makes every repository inside a directory use a profile, whatever profile is active globally. Also `devsafe unbind` and `devsafe bindings`. Uses git's `includeIf "gitdir:..."`, so it applies in every git client; the most specific binding wins.
 - The pre-commit hook checks commits against the directory's bound profile.

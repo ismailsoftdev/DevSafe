@@ -1,6 +1,6 @@
 """DevSafe - Git profile manager for developers."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Ismail Abdinur"
 __email__ = "ismail@ismailsoftdev.com"
 __description__ = (

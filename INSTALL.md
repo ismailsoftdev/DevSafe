@@ -41,7 +41,7 @@ devsafe --version
 Every release is a git tag (see [Releases](https://github.com/ismailsoftdev/DevSafe/releases)):
 
 ```bash
-uv tool install git+https://github.com/ismailsoftdev/DevSafe@v0.1.0
+uv tool install git+https://github.com/ismailsoftdev/DevSafe@v0.2.0
 ```
 
 A pinned install stays on that version; `uv tool upgrade` won't move it.
@@ -67,10 +67,10 @@ uv tool install --editable .
 
 Each [release](https://github.com/ismailsoftdev/DevSafe/releases) has a wheel
 attached. Download it (for a private repository, from the Releases page while
-signed in, or with `gh release download v0.1.0 --repo ismailsoftdev/DevSafe`), then:
+signed in, or with `gh release download v0.2.0 --repo ismailsoftdev/DevSafe`), then:
 
 ```bash
-uv tool install ./devsafe-0.1.0-py3-none-any.whl
+uv tool install ./devsafe-0.2.0-py3-none-any.whl
 ```
 
 ## ⬆️ Upgrading
