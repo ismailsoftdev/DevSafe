@@ -122,13 +122,11 @@ devsafe --help
    ```bash
    devsafe add work --name "Your Name" --email "your@work.com"
    ```
-
 2. **Switch to the profile**:
 
    ```bash
    devsafe switch work
    ```
-
 3. **Initialize in a git repository**:
 
    ```bash

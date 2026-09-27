@@ -7,9 +7,9 @@ name = "devsafe"
 dynamic = ["version"]
 description = "Git profile manager for developers - Never commit with the wrong credentials again"
 readme = {file = "README.md", content-type = "text/markdown"}
-license = {file = "LICENSE"}
+license = "MIT"
 authors = [
-    {name = "DevSafe Team", email = "hello@devsafe.dev"}
+    {name = "Ismail Abdinur", email = "ismail@ismailsoftdev.com"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
