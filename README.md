@@ -11,6 +11,7 @@ DevSafe is a command-line tool that helps developers manage multiple git profile
 - 🔐 **SSH & GPG Key Support** - Full support for SSH keys and GPG signing
 - 🛡️ **Safety First** - Pre-commit hooks prevent wrong profile commits
 - 📊 **Clear Status Display** - Always know which profile is active
+- 📁 **Per-Directory Profiles** - Bind a folder or repository to a profile; git uses it automatically
 - 🎯 **Repository Integration** - Git-aware status and repository management
 - 🚀 **Fast & Lightweight** - Written in Python for speed and reliability
 - ✅ **Git Hooks** - Automatic validation before commits
@@ -60,8 +61,11 @@ devsafe list
 devsafe switch work
 devsafe switch personal
 
-# Check current profile
+# Check which profile applies here
 devsafe current
+
+# Always use your personal profile for repos under ~/personal
+devsafe bind personal ~/personal
 
 # Initialize DevSafe in a git repository (adds safety hooks)
 devsafe init
@@ -106,9 +110,29 @@ devsafe remove oldprofile --force
 # Switch to a profile
 devsafe switch work
 
-# Check current active profile
+# Check which profile and identity apply in the current directory
 devsafe current
 ```
+
+### Per-Directory and Per-Repository Profiles
+
+Bind a directory to a profile, and every git repository inside it uses that profile, whatever profile is active globally:
+
+```bash
+# All repos under ~/work commit as your work identity
+devsafe bind work ~/work
+
+# Inside a repository: bind just this repository (its root)
+devsafe bind personal
+
+# See and remove bindings
+devsafe bindings
+devsafe unbind ~/work
+```
+
+The most specific binding wins, so `~/work/oss` can be bound to `personal` while the rest of `~/work` stays on `work`. Directories without a binding use the profile chosen with `devsafe switch`.
+
+Bindings use git's own [conditional includes](https://git-scm.com/docs/git-config#_conditional_includes) (`includeIf "gitdir:..."`), so they apply in every tool (terminal, IDEs, GUI clients) with no switching and no background process. DevSafe writes one file per bound profile to `~/.devsafe/profiles/` and keeps its rules at the end of `~/.gitconfig`. The pre-commit hook checks commits against the directory's bound profile.
 
 ### Repository Safety
 
@@ -153,6 +177,9 @@ DevSafe stores its configuration in `~/.devsafe/config.json`. The configuration 
     }
   },
   "current_profile": "work",
+  "bindings": {
+    "/Users/john/personal": "personal"
+  },
   "auto_switch": true,
   "hooks_enabled": true,
   "backup_enabled": true
@@ -176,14 +203,9 @@ Once initialized, DevSafe will:
 - 📋 Show clear guidance to fix profile mismatches
 - ✅ Allow commits when profile is correctly set
 
-### Repository-Specific Profiles (Coming Soon)
+### Remote-Based Profiles (Coming Soon)
 
-Set default profiles for specific repositories or patterns:
-
-```bash
-# Auto-switch to work profile for company repositories
-devsafe config --pattern "*company.com*" --profile work
-```
+Choose a profile by the repository's remote URL, e.g. every repository cloned from your company's GitHub organization, wherever it lives on disk.
 
 ## 🤝 Contributing
 
@@ -232,10 +254,11 @@ DevSafe modifies your global git configuration. While it creates backups automat
 - [x] **Cross-platform support** - Works on macOS, Linux, and Windows
 - [x] **Comprehensive testing** - Full test suite with pytest
 - [x] **Modern Python packaging** - Uses pyproject.toml and modern standards
+- [x] **Per-directory and per-repository profiles** - `devsafe bind` ties a profile to a folder or repository
 
 ### 🚧 In Progress
 
-- [ ] **Repository-specific auto-switching** - Auto-detect and switch profiles by repo patterns
+- [ ] **Remote-based profiles** - Pick a profile by the repository's remote URL
 - [ ] **Enhanced documentation** - More examples and use cases
 
 ### 🎯 Future Features

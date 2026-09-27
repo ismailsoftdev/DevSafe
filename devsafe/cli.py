@@ -2,6 +2,8 @@
 
 import sys
 from pathlib import Path
+from typing import Dict, Optional, Tuple
+from urllib.parse import quote
 
 import typer
 from pydantic import ValidationError
@@ -175,31 +177,131 @@ def switch(
 
 @app.command()
 def current() -> None:
-    """Show current profile information."""
+    """Show which profile and git identity apply in the current directory."""
     config = load_config()
-    
-    if not config.current_profile:
+    binding = resolve_binding_here(config)
+
+    if not config.current_profile and binding is None:
         console.print("[yellow]No profile is currently active.[/yellow]")
         console.print("Use 'devsafe switch <profile>' to activate a profile.")
         return
-    
-    current_git_config = git_manager.get_current_config()
-    
+
+    identity = git_manager.get_effective_identity(
+        ("user.name", "user.email", "user.signingkey", "commit.gpgsign")
+    )
+
     table = Table(show_header=True, header_style="bold blue", title="Current Profile")
     table.add_column("Setting", style="cyan")
     table.add_column("Value", style="white")
-    
-    table.add_row("Profile", config.current_profile)
-    
-    if "user.name" in current_git_config:
-        table.add_row("Name", current_git_config["user.name"])
-    if "user.email" in current_git_config:
-        table.add_row("Email", current_git_config["user.email"])
-    if "user.signingkey" in current_git_config:
-        table.add_row("GPG Key", current_git_config["user.signingkey"])
-    if "commit.gpgsign" in current_git_config:
-        table.add_row("GPG Signing", current_git_config["commit.gpgsign"])
-    
+
+    table.add_row("Active profile", config.current_profile or "None")
+    if binding:
+        table.add_row("Bound profile", f"{binding[1]} (for {display_path(binding[0])})")
+
+    if "user.name" in identity:
+        table.add_row("Name", identity["user.name"])
+    if "user.email" in identity:
+        table.add_row("Email", identity["user.email"])
+        origin = git_manager.get_identity_origin("user.email")
+        if origin:
+            table.add_row("Set in", display_path(origin[len("file:"):]) if origin.startswith("file:") else origin)
+    if "user.signingkey" in identity:
+        table.add_row("GPG Key", identity["user.signingkey"])
+    if "commit.gpgsign" in identity:
+        table.add_row("GPG Signing", identity["commit.gpgsign"])
+
+    console.print(table)
+
+    if binding and git_manager.get_git_dir() is None:
+        console.print(f"[dim]Profile '{binding[1]}' applies inside git repositories here.[/dim]")
+
+
+@app.command()
+def bind(
+    profile_name: str = typer.Argument(..., help="Profile to use in the directory"),
+    path: Optional[Path] = typer.Argument(
+        None, help="Directory to bind (default: the current repository's root, else the current directory)"
+    ),
+) -> None:
+    """Use a profile for every git repository inside a directory."""
+    config = load_config()
+
+    if profile_name not in config.profiles:
+        console.print(f"[red]Profile '{profile_name}' not found![/red]")
+        console.print("Use 'devsafe list' to see available profiles.")
+        raise typer.Exit(1)
+
+    directory = resolve_bind_path(path)
+    if not directory.is_dir():
+        console.print(f"[red]Not a directory: {directory}[/red]")
+        raise typer.Exit(1)
+
+    previous_bindings = dict(config.bindings)
+    config.bindings[str(directory)] = profile_name
+    update_bindings(config, previous_bindings)
+
+    profile = config.profiles[profile_name]
+    console.print(f"[green]✓[/green] Bound {display_path(directory)} to profile '{profile_name}'")
+    console.print(f"Repositories inside it now commit as {profile.name} <{profile.email}>")
+
+    # If we're in a repository this binding applies to, confirm git agrees
+    here = resolve_binding_here(config)
+    if git_manager.get_git_dir() is not None and here is not None and here[0] == str(directory):
+        identity = git_manager.get_effective_identity()
+        if identity.get("user.email") != str(profile.email):
+            origin = git_manager.get_identity_origin("user.email") or "unknown"
+            console.print(
+                f"[yellow]Warning: this repository still uses {identity.get('user.email')} "
+                f"(set in {origin}), which overrides the binding.[/yellow]"
+            )
+
+
+@app.command()
+def unbind(
+    path: Optional[Path] = typer.Argument(
+        None, help="Bound directory (default: the current repository's root, else the current directory)"
+    ),
+) -> None:
+    """Remove a directory's profile binding."""
+    config = load_config()
+    directory = str(resolve_bind_path(path))
+
+    if directory not in config.bindings:
+        console.print(f"[red]No binding for {display_path(directory)}[/red]")
+        covering = config.resolve_binding(Path(directory))
+        if covering:
+            console.print(
+                f"It is covered by the binding for {display_path(covering[0])} (profile '{covering[1]}'). "
+                f"To remove that, run: devsafe unbind \"{covering[0]}\""
+            )
+        raise typer.Exit(1)
+
+    previous_bindings = dict(config.bindings)
+    profile_name = config.bindings.pop(directory)
+    update_bindings(config, previous_bindings)
+    console.print(f"[green]✓[/green] Removed binding of {display_path(directory)} to profile '{profile_name}'")
+
+
+@app.command()
+def bindings() -> None:
+    """List directories bound to profiles."""
+    config = load_config()
+
+    if not config.bindings:
+        console.print("[yellow]No bindings. Use 'devsafe bind <profile> [path]' to add one.[/yellow]")
+        return
+
+    table = Table(show_header=True, header_style="bold blue")
+    table.add_column("Directory", style="cyan")
+    table.add_column("Profile", style="white")
+    table.add_column("Identity", style="white")
+
+    for directory, profile_name in sorted(config.bindings.items()):
+        profile = config.profiles.get(profile_name)
+        identity = f"{profile.name} <{profile.email}>" if profile else "[red]profile missing[/red]"
+        shown_directory = display_path(directory) if Path(directory).is_dir() else f"{display_path(directory)} [red](missing)[/red]"
+        table.add_row(shown_directory, profile_name, identity)
+
     console.print(table)
 
 
@@ -215,14 +317,26 @@ def remove(
         console.print(f"[red]Profile '{profile_name}' not found![/red]")
         raise typer.Exit(1)
     
+    bound_directories = [d for d, p in config.bindings.items() if p == profile_name]
+
     # Confirm removal
     if not force:
+        if bound_directories:
+            console.print(f"Profile '{profile_name}' is bound to these directories, which will be unbound:")
+            for directory in bound_directories:
+                console.print(f"  {directory}")
         if not typer.confirm(f"Are you sure you want to remove profile '{profile_name}'?"):
             console.print("Cancelled.")
             return
-    
+
     # Remove profile
     if config.remove_profile(profile_name):
+        if bound_directories:
+            for directory in bound_directories:
+                del config.bindings[directory]
+            if not sync_bindings(config):
+                console.print("[red]Failed to update git configuration for bindings![/red]")
+                raise typer.Exit(1)
         if config_manager.save_config(config):
             console.print(f"[green]✓[/green] Profile '{profile_name}' removed successfully!")
         else:
@@ -275,6 +389,7 @@ def status() -> None:
     config = load_config()
     console.print(f"Profiles: {len(config.profiles)}")
     console.print(f"Current profile: {config.current_profile or 'None'}")
+    console.print(f"Bindings: {len(config.bindings)}")
     console.print(f"Auto-switch: {'✓' if config.auto_switch else '✗'}")
     console.print(f"Hooks enabled: {'✓' if config.hooks_enabled else '✗'}")
     
@@ -306,17 +421,93 @@ def switch_to_profile(profile_name: str, config: DevSafeConfig) -> None:
     profile_config = profile.to_dict()
     
     if git_manager.apply_profile_config(profile_config):
+        # Setting global values may have appended a [user] section after the
+        # binding rules; re-add them last so bindings keep precedence
+        if config.bindings and not sync_bindings(config):
+            console.print("[yellow]Warning: failed to refresh directory bindings.[/yellow]")
+
         # Update current profile in config
         config.switch_profile(profile_name)
         if config_manager.save_config(config):
             console.print(f"[green]✓[/green] Switched to profile '{profile_name}'")
             console.print(f"Git name: {profile.name}")
             console.print(f"Git email: {profile.email}")
+
+            binding = resolve_binding_here(config)
+            if binding and binding[1] != profile_name:
+                console.print(
+                    f"[yellow]Note: {display_path(binding[0])} is bound to profile '{binding[1]}'; "
+                    "repositories there keep using it.[/yellow]"
+                )
         else:
             console.print("[yellow]Profile applied but failed to save configuration.[/yellow]")
     else:
         console.print("[red]Failed to apply profile configuration![/red]")
         raise typer.Exit(1)
+
+
+def display_path(path) -> str:
+    """Show a path with the home directory abbreviated to ~."""
+    home = str(Path.home())
+    text = str(path)
+    return "~" + text[len(home):] if text == home or text.startswith(home + "/") else text
+
+
+def resolve_bind_path(path: Optional[Path]) -> Path:
+    """Directory a bind/unbind refers to: given path, else repo root, else cwd."""
+    if path is not None:
+        return path.expanduser().resolve()
+    return (git_manager.get_repository_root() or Path.cwd()).resolve()
+
+
+def resolve_binding_here(config: DevSafeConfig) -> Optional[Tuple[str, str]]:
+    """Binding that applies here, matched the way git matches includeIf gitdir."""
+    return config.resolve_binding(git_manager.get_git_dir() or Path.cwd())
+
+
+def profile_config_file(profile_name: str) -> Path:
+    """Generated git config file for a profile, included for bound directories."""
+    return config_manager.config_dir / "profiles" / f"{quote(profile_name, safe='')}.gitconfig"
+
+
+def sync_bindings(config: DevSafeConfig) -> bool:
+    """Write bound profiles' config files and update git's includeIf rules."""
+    profiles_dir = config_manager.config_dir / "profiles"
+    success = True
+    includes = []
+
+    for directory, profile_name in config.bindings.items():
+        if profile_name not in config.profiles:
+            console.print(f"[yellow]Skipping binding of {directory}: profile '{profile_name}' not found[/yellow]")
+            continue
+        includes.append((directory, profile_config_file(profile_name)))
+
+    bound_files = {config_file for _, config_file in includes}
+    for profile_name, profile in config.profiles.items():
+        config_file = profile_config_file(profile_name)
+        if config_file in bound_files:
+            success = git_manager.write_config_file(config_file, profile.to_include_config()) and success
+
+    success = git_manager.sync_directory_includes(includes, profiles_dir) and success
+
+    # Remove files of profiles that are no longer bound
+    if profiles_dir.is_dir():
+        for config_file in profiles_dir.glob("*.gitconfig"):
+            if config_file not in bound_files:
+                config_file.unlink()
+
+    return success
+
+
+def update_bindings(config: DevSafeConfig, previous_bindings: Dict[str, str]) -> None:
+    """Apply changed bindings to git and save them, rolling back on failure."""
+    if sync_bindings(config) and config_manager.save_config(config):
+        return
+
+    config.bindings = previous_bindings
+    sync_bindings(config)
+    console.print("[red]Failed to update bindings; no changes were made.[/red]")
+    raise typer.Exit(1)
 
 
 def cli_main() -> None:
