@@ -1,80 +1,19 @@
-#!/usr/bin/env python3
-"""Git pre-commit hook for DevSafe profile validation."""
+#!/bin/sh
+# Installed by DevSafe (`devsafe init`). Do not edit; re-run `devsafe init` instead.
+#
+# The profile check itself lives in the devsafe package, so upgrading DevSafe
+# updates it for every repository. `devsafe init` fills in the Python it was
+# run with, which also works in GUI git clients whose PATH lacks `devsafe`.
 
-import sys
-import subprocess
-import json
-from pathlib import Path
+DEVSAFE_PYTHON=__DEVSAFE_PYTHON__
 
-def get_devsafe_config():
-    """Load DevSafe configuration."""
-    config_file = Path.home() / ".devsafe" / "config.json"
-    if not config_file.exists():
-        return None
-    
-    try:
-        with open(config_file, 'r') as f:
-            return json.load(f)
-    except:
-        return None
+if [ -x "$DEVSAFE_PYTHON" ]; then
+    exec "$DEVSAFE_PYTHON" -m devsafe hook pre-commit
+fi
 
-def get_current_git_config():
-    """Get current git configuration."""
-    config = {}
-    
-    try:
-        result = subprocess.run(
-            ["git", "config", "user.name"], 
-            capture_output=True, text=True, check=False
-        )
-        if result.returncode == 0:
-            config["name"] = result.stdout.strip()
+if command -v devsafe >/dev/null 2>&1; then
+    exec devsafe hook pre-commit
+fi
 
-        result = subprocess.run(
-            ["git", "config", "user.email"], 
-            capture_output=True, text=True, check=False
-        )
-        if result.returncode == 0:
-            config["email"] = result.stdout.strip()
-    except:
-        pass
-    
-    return config
-
-def main():
-    """Main hook logic."""
-    # Load DevSafe config
-    devsafe_config = get_devsafe_config()
-    if not devsafe_config:
-        # DevSafe not configured, allow commit
-        sys.exit(0)
-    
-    # Get current git config
-    git_config = get_current_git_config()
-    
-    # Check if current git config matches a DevSafe profile
-    current_profile = devsafe_config.get("current_profile")
-    profiles = devsafe_config.get("profiles", {})
-    
-    if not current_profile or current_profile not in profiles:
-        print("⚠️  No active DevSafe profile!")
-        print("Use 'devsafe switch <profile>' to set an active profile.")
-        sys.exit(1)
-    
-    # Validate current git config matches active profile
-    active_profile = profiles[current_profile]
-    
-    if (git_config.get("name") != active_profile.get("name") or 
-        git_config.get("email") != active_profile.get("email")):
-        print(f"⚠️  Git configuration doesn't match active profile '{current_profile}'!")
-        print(f"Expected: {active_profile.get('name')} <{active_profile.get('email')}>")
-        print(f"Current:  {git_config.get('name', 'Unknown')} <{git_config.get('email', 'Unknown')}>")
-        print(f"Run 'devsafe switch {current_profile}' to fix this.")
-        sys.exit(1)
-    
-    # All good!
-    print(f"✅ Committing as {current_profile}: {git_config.get('name')} <{git_config.get('email')}>")
-    sys.exit(0)
-
-if __name__ == "__main__":
-    main()
+echo "⚠️  DevSafe not found; skipping profile check. Reinstall DevSafe or re-run 'devsafe init'." >&2
+exit 0

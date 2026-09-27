@@ -1,6 +1,8 @@
 """DevSafe initialization command."""
 
+import shlex
 import shutil
+import sys
 from pathlib import Path
 
 import typer
@@ -12,6 +14,28 @@ console = Console()
 
 # Shipped inside the package so it is present in wheel installs
 HOOK_SOURCE = Path(__file__).parent.parent / "hooks" / "pre-commit"
+
+# Lines identifying hooks installed by DevSafe: the current shell hook, and
+# the standalone Python hook installed by earlier versions
+DEVSAFE_HOOK_MARKERS = (
+    "# Installed by DevSafe",
+    "Git pre-commit hook for DevSafe profile validation.",
+)
+
+
+def render_hook() -> str:
+    """Return the pre-commit hook with this installation's Python filled in."""
+    python = shlex.quote(Path(sys.executable).as_posix())
+    return HOOK_SOURCE.read_text().replace("__DEVSAFE_PYTHON__", python)
+
+
+def is_devsafe_hook(path: Path) -> bool:
+    """Check whether an existing hook was installed by DevSafe."""
+    try:
+        content = path.read_text()
+    except (OSError, UnicodeDecodeError):
+        return False
+    return any(marker in content for marker in DEVSAFE_HOOK_MARKERS)
 
 
 def init_devsafe_in_repo(force: bool = False) -> None:
@@ -35,11 +59,15 @@ def init_devsafe_in_repo(force: bool = False) -> None:
     hooks_dir.mkdir(parents=True, exist_ok=True)
     pre_commit_dst = hooks_dir / "pre-commit"
 
+    hook_content = render_hook()
     install = True
     if pre_commit_dst.exists():
-        if pre_commit_dst.read_bytes() == HOOK_SOURCE.read_bytes():
+        if pre_commit_dst.read_text(errors="replace") == hook_content:
             console.print("[green]✓[/green] Pre-commit hook already installed")
             install = False
+        elif is_devsafe_hook(pre_commit_dst):
+            # Our own hook from another install or an older version; update it
+            pass
         elif not force:
             console.print(f"[red]Error: A pre-commit hook already exists at {pre_commit_dst}[/red]")
             console.print("Re-run with --force to replace it (the existing hook will be backed up).")
@@ -50,7 +78,7 @@ def init_devsafe_in_repo(force: bool = False) -> None:
             console.print(f"[yellow]Backed up existing hook to {backup}[/yellow]")
 
     if install:
-        shutil.copy2(HOOK_SOURCE, pre_commit_dst)
+        pre_commit_dst.write_text(hook_content)
         pre_commit_dst.chmod(0o755)  # Make executable
         console.print("[green]✓[/green] Installed pre-commit hook")
 

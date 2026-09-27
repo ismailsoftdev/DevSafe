@@ -9,7 +9,7 @@ import pytest
 from typer.testing import CliRunner
 
 from devsafe import cli
-from devsafe.commands.init import HOOK_SOURCE, init_devsafe_in_repo
+from devsafe.commands.init import HOOK_SOURCE, init_devsafe_in_repo, render_hook
 from devsafe.core import GitConfigManager
 from devsafe.models import Profile
 from devsafe.utils import ConfigError, ConfigManager
@@ -103,7 +103,7 @@ class TestInit:
         init_devsafe_in_repo()
 
         hook = repo / ".git" / "hooks" / "pre-commit"
-        assert hook.read_bytes() == HOOK_SOURCE.read_bytes()
+        assert hook.read_text() == render_hook()
         assert os.access(hook, os.X_OK)
         assert (repo / ".devsafe").is_dir()
         assert not (repo / "sub" / ".devsafe").exists()
@@ -124,7 +124,7 @@ class TestInit:
         assert hook.read_text() == "#!/bin/sh\necho mine\n"
 
         init_devsafe_in_repo(force=True)
-        assert hook.read_bytes() == HOOK_SOURCE.read_bytes()
+        assert hook.read_text() == render_hook()
         backup = hook.with_name("pre-commit.devsafe-backup")
         assert backup.read_text() == "#!/bin/sh\necho mine\n"
 

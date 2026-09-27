@@ -40,8 +40,7 @@ build: clean ## Build distribution packages
 	uv build
 
 setup-hooks: ## Set up git hooks for development
-	cp devsafe/hooks/pre-commit .git/hooks/pre-commit
-	chmod +x .git/hooks/pre-commit
+	uv run devsafe init --force
 
 demo: ## Run a quick demo
 	@echo "🚀 DevSafe Demo"
