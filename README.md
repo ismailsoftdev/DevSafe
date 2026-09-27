@@ -20,33 +20,29 @@ DevSafe is a command-line tool that helps developers manage multiple git profile
 
 ### Installation
 
-Recommended: install with [uv](https://docs.astral.sh/uv/). It keeps DevSafe in its own environment and downloads a suitable Python if you don't have one.
+DevSafe installs straight from GitHub. Recommended: use [uv](https://docs.astral.sh/uv/). It keeps DevSafe in its own environment and downloads a suitable Python if you don't have one.
 
 ```bash
 # Install uv if you don't have it
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install DevSafe
-uv tool install devsafe
+uv tool install git+https://github.com/ismailsoftdev/DevSafe
 
-# Upgrade
+# Upgrade to the latest version
 uv tool upgrade devsafe
-```
-
-Or try it without installing:
-
-```bash
-uvx devsafe status
 ```
 
 Alternative: [pipx](https://pipx.pypa.io/) works the same way (requires Python 3.10+):
 
 ```bash
-pipx install devsafe
+pipx install git+https://github.com/ismailsoftdev/DevSafe
 pipx upgrade devsafe
 ```
 
-See [INSTALL.md](https://github.com/ismailsoftdev/DevSafe/blob/main/INSTALL.md) for more options and troubleshooting.
+> **Note:** The repository is currently private. You need access to it, and git must be able to authenticate to GitHub. Or use SSH: `uv tool install git+ssh://git@github.com/ismailsoftdev/DevSafe.git`
+
+See [INSTALL.md](https://github.com/ismailsoftdev/DevSafe/blob/main/INSTALL.md) for installing a specific version, trying DevSafe without installing, and troubleshooting.
 
 ### Basic Usage
 

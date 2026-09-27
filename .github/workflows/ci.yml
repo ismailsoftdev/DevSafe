@@ -6,8 +6,6 @@ on:
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ main ]
-  # Manual run from the Actions tab: builds and publishes to TestPyPI
-  workflow_dispatch:
 
 jobs:
   test:
@@ -67,44 +65,27 @@ jobs:
           name: dist
           path: dist/
 
-  publish-testpypi:
-    needs: build
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/devsafe
-    permissions:
-      id-token: write  # Trusted Publishing
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: dist
-          path: dist/
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
-
-  publish-pypi:
+  release:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/devsafe
     permissions:
-      id-token: write  # Trusted Publishing
+      contents: write  # create the GitHub Release
     steps:
       - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Create GitHub Release with wheel and sdist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "DevSafe ${GITHUB_REF_NAME#v}" \
+            --generate-notes \
+            --verify-tag
 
-# Publishing uses PyPI Trusted Publishing (no API token secret).
-# One-time setup is described in RELEASING.md.
+# Users install straight from this repository (see INSTALL.md); tagged
+# releases also get the built wheel and sdist attached. See RELEASING.md.

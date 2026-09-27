@@ -11,4 +11,4 @@ Initial public release.
 - `devsafe init` works from repository subdirectories and worktrees, honors `core.hooksPath`, and won't overwrite an existing hook without `--force` (which backs it up first).
 - Switching to a profile without a GPG key clears the previous profile's signing settings.
 - A config file that can't be loaded is reported instead of being treated as empty, so profiles are never silently overwritten.
-- Requires Python 3.10+. Install with `uv tool install devsafe` or `pipx install devsafe`.
+- Requires Python 3.10+. Install from GitHub with `uv tool install git+https://github.com/ismailsoftdev/DevSafe` or pipx.

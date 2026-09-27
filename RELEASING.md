@@ -1,46 +1,42 @@
 # Releasing DevSafe
 
-Releases are published to PyPI by GitHub Actions (`.github/workflows/ci.yml`)
-using [Trusted Publishing](https://docs.pypi.org/trusted-publishers/), so no
-API token is stored in the repository.
+DevSafe is distributed from GitHub: users install from the repository
+(`uv tool install git+https://github.com/ismailsoftdev/DevSafe`), and
+`uv tool upgrade devsafe` / `pipx upgrade devsafe` gets the latest `main`.
+Every push to `main` therefore reaches users on their next upgrade; keep it
+green.
 
-## One-time setup
-
-1. **PyPI**: sign in at <https://pypi.org>, go to *Your projects → Publishing*,
-   and add a *pending publisher*:
-   - PyPI project name: `devsafe`
-   - Owner: `ismailsoftdev`
-   - Repository name: `DevSafe`
-   - Workflow name: `ci.yml`
-   - Environment name: `pypi`
-2. **TestPyPI**: do the same at <https://test.pypi.org> with environment name
-   `testpypi`.
-3. **GitHub**: in the repository's *Settings → Environments*, create
-   environments named `pypi` and `testpypi`. Adding yourself as a required
-   reviewer on `pypi` makes every release wait for your approval.
+A release is a version tag. When a `vX.Y.Z` tag is pushed, CI
+(`.github/workflows/ci.yml`) runs the tests, checks the tag matches the
+package version, and creates a GitHub Release with the wheel and sdist
+attached. Users can install that exact version with
+`uv tool install git+https://github.com/ismailsoftdev/DevSafe@vX.Y.Z`.
 
 ## Each release
 
 1. Update the version in `devsafe/__init__.py` (the only place it is defined).
 2. In `CHANGELOG.md`, replace `Unreleased` with today's date.
 3. Commit and push to `main`, and wait for CI to pass.
-4. Rehearse on TestPyPI: *Actions → CI → Run workflow* on `main`. Then check it installs:
-
-   ```bash
-   uv tool install --index https://test.pypi.org/simple/ \
-     --index-strategy unsafe-best-match devsafe==X.Y.Z
-   devsafe --version
-   uv tool uninstall devsafe
-   ```
-
-5. Tag and push. CI refuses to publish if the tag doesn't match the version:
+4. Tag and push:
 
    ```bash
    git tag -a vX.Y.Z -m "DevSafe X.Y.Z"
    git push origin vX.Y.Z
    ```
 
-6. Once the workflow finishes, verify with `uvx devsafe@X.Y.Z --version`.
+5. Once the workflow finishes, check the release page and verify:
 
-PyPI never accepts the same version twice, so if a release is broken, fix it
-and publish a new version.
+   ```bash
+   uvx --from git+https://github.com/ismailsoftdev/DevSafe@vX.Y.Z devsafe --version
+   ```
+
+If a release is broken, fix it and release a new version rather than moving
+the tag; pinned installs expect tags not to change.
+
+## When the repository goes public
+
+Installing from GitHub keeps working unchanged, and the authentication
+section in INSTALL.md can be removed. Publishing to PyPI as well (for
+`uv tool install devsafe` / `pipx install devsafe`) is optional: commit
+6f95c2b has a ready-made Trusted Publishing workflow and setup steps to
+restore.
