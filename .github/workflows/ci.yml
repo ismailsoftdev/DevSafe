@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.2.0  # publishes exact version tags only
         with:
           python-version: ${{ matrix.python }}
           enable-cache: true
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.2.0  # publishes exact version tags only
 
       - name: Build sdist and wheel
         run: uv build
