@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 
@@ -45,7 +46,17 @@ class Profile(BaseModel):
         if self.signing_key:
             config["user.signingkey"] = self.signing_key
             config["commit.gpgsign"] = "true"
-        
+
+        return config
+
+    def to_include_config(self) -> Dict[str, str]:
+        """Settings for this profile's includeIf file (used by bindings).
+
+        commit.gpgsign is always explicit: an included file can't unset a
+        global value, so a profile without a key must turn signing off.
+        """
+        config = self.to_dict()
+        config.setdefault("commit.gpgsign", "false")
         return config
 
 
@@ -57,6 +68,24 @@ class DevSafeConfig(BaseModel):
     auto_switch: bool = Field(True, description="Enable automatic profile switching")
     hooks_enabled: bool = Field(True, description="Enable git hooks")
     backup_enabled: bool = Field(True, description="Backup git config before changes")
+    bindings: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Directory (absolute, resolved) -> profile used for repos inside it",
+    )
+
+    def resolve_binding(self, path: Path) -> Optional[Tuple[str, str]]:
+        """Find the binding covering path, as (directory, profile name).
+
+        The most specific (longest) bound directory wins, matching the order
+        in which the git includeIf rules are written.
+        """
+        target = os.path.realpath(path)
+        best: Optional[Tuple[str, str]] = None
+        for directory, profile_name in self.bindings.items():
+            covers = target == directory or target.startswith(directory.rstrip(os.sep) + os.sep)
+            if covers and (best is None or len(directory) > len(best[0])):
+                best = (directory, profile_name)
+        return best
 
     def get_current_profile(self) -> Optional[Profile]:
         """Get the currently active profile."""

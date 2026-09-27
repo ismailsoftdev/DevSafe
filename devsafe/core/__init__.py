@@ -61,14 +61,17 @@ class GitConfigManager:
 
         return config
 
-    def get_effective_identity(self) -> Dict[str, str]:
-        """Get the user.name/user.email git will actually use here.
+    def get_effective_identity(
+        self, keys: Tuple[str, ...] = ("user.name", "user.email")
+    ) -> Dict[str, str]:
+        """Get the settings git will actually use here (default: name/email).
 
-        Unlike get_current_config, this includes repository-local overrides.
+        Unlike get_current_config, this includes repository-local overrides
+        and includeIf rules (directory bindings).
         """
         identity = {}
 
-        for key in ("user.name", "user.email"):
+        for key in keys:
             try:
                 result = subprocess.run(
                     ["git", "config", key],
@@ -183,6 +186,93 @@ class GitConfigManager:
         except Exception:
             pass
         return None
+
+    def get_git_dir(self) -> Optional[Path]:
+        """Get the absolute git directory, which includeIf "gitdir:" matches."""
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--absolute-git-dir"],
+                capture_output=True, text=True, check=False
+            )
+            if result.returncode == 0:
+                return Path(result.stdout.strip())
+        except Exception:
+            pass
+        return None
+
+    def get_identity_origin(self, key: str) -> Optional[str]:
+        """Get the config file that sets key here (e.g. "file:/Users/me/.gitconfig")."""
+        try:
+            result = subprocess.run(
+                ["git", "config", "--show-origin", key],
+                capture_output=True, text=True, check=False
+            )
+            if result.returncode == 0:
+                return result.stdout.split("\t", 1)[0]
+        except Exception:
+            pass
+        return None
+
+    def write_config_file(self, path: Path, settings: Dict[str, str]) -> bool:
+        """Write settings to a standalone git config file, replacing it."""
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.unlink(missing_ok=True)
+            for key, value in settings.items():
+                subprocess.run(
+                    ["git", "config", "--file", str(path), key, value],
+                    capture_output=True, text=True, check=True
+                )
+            return True
+        except Exception as e:
+            console.print(f"[red]Error writing {path}: {e}[/red]")
+            return False
+
+    def sync_directory_includes(
+        self, includes: List[Tuple[str, Path]], managed_dir: Path
+    ) -> bool:
+        """Make DevSafe's includeIf rules in the global config match includes.
+
+        includes is a list of (directory, config file). Existing rules whose
+        file lives in managed_dir are removed and all rules are re-added at
+        the end of the file, least specific first: for git, later settings
+        win, so nested directories override their parents and no [user]
+        section appended later (e.g. by `devsafe switch`) can shadow them.
+        """
+        success = True
+        managed_prefix = str(managed_dir) + "/"
+
+        # -z: keys may contain spaces (e.g. "gitdir:/Users/me/Dev Tools/")
+        result = subprocess.run(
+            ["git", "config", "--global", "-z", "--get-regexp", r"^includeif\..*\.path$"],
+            capture_output=True, text=True, check=False
+        )
+        for record in filter(None, result.stdout.split("\0")):
+            key, _, value = record.partition("\n")
+            if value.startswith(managed_prefix):
+                subsection = key[len("includeif."):-len(".path")]
+                removed = subprocess.run(
+                    ["git", "config", "--global", "--remove-section", f"includeIf.{subsection}"],
+                    capture_output=True, text=True, check=False
+                )
+                success = success and removed.returncode == 0
+
+        for directory, config_file in sorted(includes, key=lambda item: len(item[0])):
+            pattern = "gitdir:" + directory.rstrip("/") + "/"
+            success = self._add_global(f"includeIf.{pattern}.path", str(config_file)) and success
+
+        return success
+
+    def _add_global(self, key: str, value: str) -> bool:
+        try:
+            subprocess.run(
+                ["git", "config", "--global", "--add", key, value],
+                capture_output=True, text=True, check=True
+            )
+            return True
+        except subprocess.CalledProcessError as e:
+            console.print(f"[red]Error setting git config {key}: {e.stderr.strip()}[/red]")
+            return False
 
     def get_hooks_dir(self) -> Optional[Path]:
         """Get the hooks directory of the current git repository.
